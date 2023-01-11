@@ -7,18 +7,7 @@
 
 PKG_DIR=~/.julia/
 
-for ARTIFACT in $(find $PKG_DIR/artifacts/*/bin) 
-do
-  chmod +w $ARTIFACT
-  patchelf \
-    $ARTIFACT \
-    --set-interpreter \
-    "$(cat $NIX_CC/nix-support/dynamic-linker)"
-  chmod -w $ARTIFACT
-done
-
-
-for ARTIFACT in $(find $PKG_DIR/juliaup/*/bin) 
+for ARTIFACT in $(find $PKG_DIR/artifacts/*/bin $PKG_DIR/juliaup/*/bin $PKG_DIR/juliaup/*/libexec) 
 do
   chmod +w $ARTIFACT
   patchelf \

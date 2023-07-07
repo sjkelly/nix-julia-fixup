@@ -1,5 +1,5 @@
 #!/usr/bin/env nix-shell
-#! nix-shell -i bash -p patchelf
+#! nix-shell -i bash -p patchelf parallel
 
 # Based on scripts by cstich, et. al.
 # Fixes up Julia Artifacts on NixOS
@@ -7,12 +7,15 @@
 
 PKG_DIR=~/.julia/
 
-for ARTIFACT in $(find $PKG_DIR/artifacts/*/bin $PKG_DIR/juliaup/*/bin $PKG_DIR/juliaup/*/libexec) 
-do
+patchelf_job() {
+  ARTIFACT=$1
+  ORIGINAL_PERMISSIONS=$(stat -c "%a" $ARTIFACT)
   chmod +w $ARTIFACT
-  patchelf \
-    $ARTIFACT \
-    --set-interpreter \
-    "$(cat $NIX_CC/nix-support/dynamic-linker)"
-  chmod -w $ARTIFACT
-done
+  patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" $ARTIFACT
+  chmod $ORIGINAL_PERMISSIONS $ARTIFACT
+}
+
+export -f patchelf_job
+
+echo "Patching..."
+find ~/src/julia/usr/* $PKG_DIR/artifacts/*/bin $PKG_DIR/juliaup/*  /home/sjkelly/.platformio/packages/*/bin/ -type f | parallel patchelf_job {} > /dev/null 2>&1
